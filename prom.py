@@ -48,10 +48,16 @@ def process_request():
 
         if not roomId in rooms:
             rooms[roomId] = {
+                'humidity': Gauge('wiser_room_humidity_percent', 'Room Humidity Percent', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
                 'temprature': Gauge('wiser_room_temperature_celsius', 'Room Temperature Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
                 'setpoint': Gauge('wiser_room_setpoint_celsius', 'Room Set Point Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
                 'outputstate': Enum('wiser_room_output_state', 'Room Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName', 'roomId', 'roomName'])
             }
+
+        # FIXME: verify whether this is the right DeviceId to use??
+        roomstat = wh.getRoomStatData(room.get("RoomStatId"))
+        roomHumidity = roomstat.get("MeasuredHumidity")
+        rooms[roomId]['humidity'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).set(roomHumidity)
 
         roomTemprature = room.get("CalculatedTemperature") / 10
         rooms[roomId]['temprature'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).set(roomTemprature)
@@ -63,12 +69,13 @@ def process_request():
         rooms[roomId]['outputstate'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).state(roomOutputState)
 
         if debugEnabled:
-            print("Room: Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}".format(
+            print("Room: Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}, Humidity = {}".format(
                 roomId,
                 roomName,
                 room.get("CalculatedTemperature") / 10,
                 room.get("CurrentSetPoint") / 10,
-                roomOutputState
+                roomOutputState,
+                roomHumidity,
             ))
 
 if __name__ == '__main__':
