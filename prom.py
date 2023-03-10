@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from prometheus_client import start_http_server, Enum, Gauge, Summary
 from wiserHeatingAPI import wiserHub
+import datetime
 import os
 import time
 
@@ -14,25 +15,32 @@ if "WISER_HUBSECRET" not in os.environ:
 debugEnabled = os.environ.get("WISER_DEBUG") == '1'
 wiserhost = os.environ.get("WISER_HUBHOST")
 wiserkey = os.environ.get("WISER_HUBSECRET")
+delay = int(os.environ.get("WISER_DELAY", 60))
 
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
 
 global_metrics = {
-    'hotwater': Enum('wiser_hotwater_output_state', 'Hot Water Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName'])
+    'heating': Enum('wiser_heating_output_state', 'Heating Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
+    'hotwater': Enum('wiser_hotwater_output_state', 'Hot Water Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
 }
 rooms = {}
 
 @REQUEST_TIME.time()
-def process_request(wh):
+def process_request():
     """Query the metrics from the Wiser hub."""
 
-    hotwaterOutputState = wh.getHotwaterRelayStatus()
-    global_metrics['hotwater'].labels(hubHost = wiserhost, hubName = hubName).state(hotwaterOutputState)
+    wh = wiserHub.wiserHub(wiserhost, wiserkey)
+    hubName = wh.getWiserHubName()
+    systemInfo = wh.getSystem()
+    heatingRelayStatus = wh.getHeatingRelayStatus()
+    hotwaterRelayState = wh.getHotwaterRelayStatus()
+    global_metrics['heating'].labels(hubHost = wiserhost, hubName = hubName).state(heatingRelayStatus)
+    global_metrics['hotwater'].labels(hubHost = wiserhost, hubName = hubName).state(hotwaterRelayState)
 
     if debugEnabled:
         print('---')
-        print("Hub HubHost = {}, HubName = {}".format(wiserhost, hubName))
-        print("HotWater State = {}".format(hotwaterOutputState))
+        print("Hub: HubHost = {}, HubName = {}, SystemTime = {}".format(wiserhost, hubName, datetime.datetime.fromtimestamp(systemInfo['UnixTime'])))
+        print("State: Heating = {}, HotWater = {}".format(heatingRelayStatus, hotwaterRelayState))
 
     for room in wh.getRooms():
         roomId = room.get("id")
@@ -55,7 +63,7 @@ def process_request(wh):
         rooms[roomId]['outputstate'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).state(roomOutputState)
 
         if debugEnabled:
-            print("Room Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}".format(
+            print("Room: Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}".format(
                 roomId,
                 roomName,
                 room.get("CalculatedTemperature") / 10,
@@ -64,10 +72,7 @@ def process_request(wh):
             ))
 
 if __name__ == '__main__':
-    wh = wiserHub.wiserHub(wiserhost, wiserkey)
-    hubName = wh.getWiserHubName()
-
     start_http_server(8000)
     while True:
-        process_request(wh)
-        time.sleep(60)
+        process_request()
+        time.sleep(delay)
