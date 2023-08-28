@@ -19,12 +19,9 @@ delay = int(os.environ.get("WISER_DELAY", 60))
 
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
 
-global_metrics = {
+metrics = {
     'heating': Enum('wiser_heating_output_state', 'Heating Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
     'hotwater': Enum('wiser_hotwater_output_state', 'Hot Water Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
-}
-
-room_metrics = {
     'humidity': Gauge('wiser_room_humidity_percent', 'Room Humidity Percent', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
     'outputstate': Enum('wiser_room_output_state', 'Room Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
     'setpoint': Gauge('wiser_room_setpoint_celsius', 'Room Set Point Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
@@ -40,8 +37,8 @@ def process_request():
     systemInfo = wh.getSystem()
     heatingRelayStatus = wh.getHeatingRelayStatus()
     hotwaterRelayState = wh.getHotwaterRelayStatus()
-    global_metrics['heating'].labels(hubHost = wiserhost, hubName = hubName).state(heatingRelayStatus)
-    global_metrics['hotwater'].labels(hubHost = wiserhost, hubName = hubName).state(hotwaterRelayState)
+    metrics['heating'].labels(hubHost = wiserhost, hubName = hubName).state(heatingRelayStatus)
+    metrics['hotwater'].labels(hubHost = wiserhost, hubName = hubName).state(hotwaterRelayState)
 
     if debugEnabled:
         print('---')
@@ -58,20 +55,20 @@ def process_request():
 
         # room heating control output
         roomOutputState = room.get("ControlOutputState")
-        room_metrics['outputstate'].labels(wiserhost, hubName, roomId, roomName).state(roomOutputState)
+        metrics['outputstate'].labels(wiserhost, hubName, roomId, roomName).state(roomOutputState)
 
         # room heating temprature set point
         roomSetPoint = room.get("CurrentSetPoint") / 10
-        room_metrics['setpoint'].labels(wiserhost, hubName, roomId, roomName).set(roomSetPoint)
+        metrics['setpoint'].labels(wiserhost, hubName, roomId, roomName).set(roomSetPoint)
 
         # room temprature calculated
         roomTemprature = room.get("CalculatedTemperature") / 10
-        room_metrics['temprature'].labels(wiserhost, hubName, roomId, roomName).set(roomTemprature)
+        metrics['temprature'].labels(wiserhost, hubName, roomId, roomName).set(roomTemprature)
 
         # humidity only available where a RoomStat is installed
         if roomstat is not None:
             roomHumidity = roomstat.get("MeasuredHumidity")
-            room_metrics['humidity'].labels(wiserhost, hubName, roomId, roomName).set(roomHumidity)
+            metrics['humidity'].labels(wiserhost, hubName, roomId, roomName).set(roomHumidity)
 
         if debugEnabled:
             print("Room: Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}, Humidity = {}".format(
