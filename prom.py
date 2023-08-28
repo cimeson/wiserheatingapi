@@ -23,7 +23,13 @@ global_metrics = {
     'heating': Enum('wiser_heating_output_state', 'Heating Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
     'hotwater': Enum('wiser_hotwater_output_state', 'Hot Water Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName']),
 }
-rooms = {}
+
+room_metrics = {
+    'humidity': Gauge('wiser_room_humidity_percent', 'Room Humidity Percent', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
+    'outputstate': Enum('wiser_room_output_state', 'Room Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
+    'setpoint': Gauge('wiser_room_setpoint_celsius', 'Room Set Point Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
+    'temprature': Gauge('wiser_room_temperature_celsius', 'Room Temperature Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName'])
+}
 
 @REQUEST_TIME.time()
 def process_request():
@@ -45,28 +51,27 @@ def process_request():
     for room in wh.getRooms():
         roomId = room.get("id")
         roomName = room.get("Name").strip()
+        roomLabels = {'hubHost': wiserhost, 'hubName': hubName, 'roomId': roomId, 'roomName': roomName}
 
-        if not roomId in rooms:
-            rooms[roomId] = {
-                'humidity': Gauge('wiser_room_humidity_percent', 'Room Humidity Percent', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
-                'temprature': Gauge('wiser_room_temperature_celsius', 'Room Temperature Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
-                'setpoint': Gauge('wiser_room_setpoint_celsius', 'Room Set Point Celsius', labelnames = ['hubHost', 'hubName', 'roomId', 'roomName']),
-                'outputstate': Enum('wiser_room_output_state', 'Room Output State', states = ['Off', 'On'], labelnames = ['hubHost', 'hubName', 'roomId', 'roomName'])
-            }
+        roomStatId = room.get("RoomStatId")
+        roomstat = wh.getRoomStatData(roomStatId) if roomStatId is not None else None
 
-        # FIXME: verify whether this is the right DeviceId to use??
-        roomstat = wh.getRoomStatData(room.get("RoomStatId"))
-        roomHumidity = roomstat.get("MeasuredHumidity")
-        rooms[roomId]['humidity'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).set(roomHumidity)
-
-        roomTemprature = room.get("CalculatedTemperature") / 10
-        rooms[roomId]['temprature'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).set(roomTemprature)
-
-        roomSetPoint = room.get("CurrentSetPoint") / 10
-        rooms[roomId]['setpoint'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).set(roomSetPoint)
-
+        # room heating control output
         roomOutputState = room.get("ControlOutputState")
-        rooms[roomId]['outputstate'].labels(hubHost = wiserhost, hubName = hubName, roomId = roomId, roomName = roomName).state(roomOutputState)
+        room_metrics['outputstate'].labels(wiserhost, hubName, roomId, roomName).state(roomOutputState)
+
+        # room heating temprature set point
+        roomSetPoint = room.get("CurrentSetPoint") / 10
+        room_metrics['setpoint'].labels(wiserhost, hubName, roomId, roomName).set(roomSetPoint)
+
+        # room temprature calculated
+        roomTemprature = room.get("CalculatedTemperature") / 10
+        room_metrics['temprature'].labels(wiserhost, hubName, roomId, roomName).set(roomTemprature)
+
+        # humidity only available where a RoomStat is installed
+        if roomstat is not None:
+            roomHumidity = roomstat.get("MeasuredHumidity")
+            room_metrics['humidity'].labels(wiserhost, hubName, roomId, roomName).set(roomHumidity)
 
         if debugEnabled:
             print("Room: Id = {}, Name = {}, CalculatedTemperature = {}, CurrentSetPoint = {}, RoomOutputState = {}, Humidity = {}".format(
@@ -75,7 +80,7 @@ def process_request():
                 room.get("CalculatedTemperature") / 10,
                 room.get("CurrentSetPoint") / 10,
                 roomOutputState,
-                roomHumidity,
+                roomHumidity if roomstat is not None else "No RoomStat"
             ))
 
 if __name__ == '__main__':
