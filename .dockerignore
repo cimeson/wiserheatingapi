@@ -1,3 +1,4 @@
+.circleci/
 .dockerignore
 .env
 .git
