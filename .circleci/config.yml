@@ -16,4 +16,5 @@ jobs:
 workflows:
   example-workflow:
     jobs:
+      - checkout
       - build-docker
