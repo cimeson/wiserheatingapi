@@ -4,17 +4,17 @@ orbs:
   docker: circleci/docker@2.2.0
 
 jobs:
-  build-docker:
+  project-setup:
     docker:
       - image: cimg/base:stable
     steps:
       - setup_remote_docker
       - checkout
-      - docker/publish:
-          image: cimeson/wiserheatingapi
-          use-docker-credentials-store: true
 
 workflows:
   build-and-push:
     jobs:
-      - build-docker
+      - project-setup
+      - docker/publish:
+          image: cimeson/wiserheatingapi
+          use-docker-credentials-store: true
