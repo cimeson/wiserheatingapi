@@ -18,3 +18,5 @@ workflows:
       - docker/publish:
           image: cimeson/wiserheatingapi
           use-docker-credentials-store: true
+          docker-username: cimeson
+          docker-password: password
