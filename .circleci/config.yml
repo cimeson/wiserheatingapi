@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  docker: circleci/docker@1.7.0
+  docker: circleci/docker@2.2.0
 
 jobs:
   build-docker:
@@ -10,10 +10,9 @@ jobs:
     steps:
       - setup_remote_docker
       - checkout
-      - docker/build:
+      - docker/publish:
           image: cimeson/wiserheatingapi
-      - docker/push:
-          image: cimeson/wiserheatingapi 
+          use-docker-credentials-store: true
 
 workflows:
   build-and-push:
