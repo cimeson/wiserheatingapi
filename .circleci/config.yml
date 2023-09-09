@@ -11,7 +11,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - docker/build:
-          image: wiserheatingapi
+          image: cimeson/wiserheatingapi
       - docker/push:
           image: cimeson/wiserheatingapi 
 
