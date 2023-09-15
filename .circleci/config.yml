@@ -22,11 +22,13 @@ workflows:
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
           extra_build_args: --build-arg ARCH=amd64
-          image: $DOCKER_USERNAME/wiserheatingapi:circleci
+          image: $DOCKER_USERNAME/wiserheatingapi
+          tag: circleci
       - docker/publish:
           context:
             - docker
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
           extra_build_args: --build-arg ARCH=arm64
-          image: $DOCKER_USERNAME/wiserheatingapi:circleci
+          image: $DOCKER_USERNAME/wiserheatingapi
+          tag: circleci
