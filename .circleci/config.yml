@@ -2,12 +2,12 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@2.2.0
+resource_class: medium
 
 jobs:
   project-setup:
     docker:
       - image: cimg/base:stable
-    resource_class: small
     steps:
       - setup_remote_docker
       - checkout
