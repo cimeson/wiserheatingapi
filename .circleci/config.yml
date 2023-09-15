@@ -12,6 +12,9 @@ jobs:
       - setup_remote_docker
       - checkout
       - run:
+          command: docker buildx create --name multiarch --use
+          name: Setup multiarch buildx
+      - run:
           command: docker buildx build --push --platform linux/arm64,linux/amd64 -t $CIRCLE_USERNAME/wiserheatingapi:circleci .
           name: Build and push multiarch Docker image
 
