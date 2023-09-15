@@ -16,4 +16,6 @@ workflows:
     jobs:
       - project-setup
       - docker/publish:
+          context:
+            - docker
           image: cimeson/wiserheatingapi
