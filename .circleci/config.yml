@@ -18,6 +18,6 @@ workflows:
       - docker/publish:
           context:
             - docker
-          image: cimeson/wiserheatingapi
+          image: $DOCKER_USERNAME/wiserheatingapi
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
