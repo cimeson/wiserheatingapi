@@ -19,5 +19,3 @@ workflows:
           context:
             - docker
           image: cimeson/wiserheatingapi
-          password: DOCKER_PASSWORD
-          username: DOCKER_USERNAME
