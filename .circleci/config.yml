@@ -2,33 +2,20 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@2.2.0
-resource_class: medium
 
 jobs:
-  project-setup:
+  build-and-push:
     docker:
       - image: cimg/base:stable
+    resource_class: medium
     steps:
       - setup_remote_docker
       - checkout
+      - run:
+          command: docker buildx build --push --platform linux/arm64,linux/amd64 -t $CIRCLE_USERNAME/wiserheatingapi:circleci .
+          name: Build and push multiarch Docker image
 
 workflows:
   build-and-push:
     jobs:
-      - project-setup
-      - docker/publish:
-          context:
-            - docker
-          docker-password: DOCKER_PASSWORD
-          docker-username: DOCKER_USERNAME
-          extra_build_args: --build-arg ARCH=amd64
-          image: $DOCKER_USERNAME/wiserheatingapi
-          tag: circleci
-      - docker/publish:
-          context:
-            - docker
-          docker-password: DOCKER_PASSWORD
-          docker-username: DOCKER_USERNAME
-          extra_build_args: --build-arg ARCH=arm64
-          image: $DOCKER_USERNAME/wiserheatingapi
-          tag: circleci
+      - build-and-push
