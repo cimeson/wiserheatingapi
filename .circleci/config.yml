@@ -2,8 +2,6 @@ version: 2.1
 
 jobs:
   build-and-push:
-    context:
-      - docker
     docker:
       - image: cimg/base:stable
     resource_class: medium
@@ -23,4 +21,6 @@ jobs:
 workflows:
   build-and-push:
     jobs:
-      - build-and-push
+      - build-and-push:
+          context:
+            - docker
