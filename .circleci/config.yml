@@ -12,7 +12,7 @@ jobs:
           command: docker buildx create --name multiarch --use
           name: Setup multiarch buildx
       - run:
-          command: docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD"
+          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
           name: Authenticate with Docker repo
       - run:
           command: docker buildx build --push --platform linux/arm64,linux/amd64 -t $DOCKER_USERNAME/wiserheatingapi:circleci .
