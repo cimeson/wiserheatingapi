@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  docker: circleci/docker@2.2.0
-
 jobs:
   build-and-push:
     docker:
@@ -15,7 +12,7 @@ jobs:
           command: docker buildx create --name multiarch --use
           name: Setup multiarch buildx
       - run:
-          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+          command: docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
           name: Authenticate with Docker repo
       - run:
           command: docker buildx build --push --platform linux/arm64,linux/amd64 -t $CIRCLE_USERNAME/wiserheatingapi:circleci .
